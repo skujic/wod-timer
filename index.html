@@ -33,7 +33,6 @@
     touch-action: manipulation;
   }
 
-  /* Force landscape */
   @media (orientation: portrait) {
     body::before {
       content: "↺  ROTATE TO LANDSCAPE";
@@ -55,7 +54,6 @@
     width: 100vw;
   }
 
-  /* ── LEFT PANEL: Mode Selector ── */
   #mode-panel {
     background: var(--surface);
     border-right: 1px solid var(--border);
@@ -103,11 +101,7 @@
     border-left-color: var(--accent);
   }
 
-  .mode-icon {
-    font-size: 1rem;
-    width: 18px;
-    flex-shrink: 0;
-  }
+  .mode-icon { font-size: 1rem; width: 18px; flex-shrink: 0; }
 
   .mode-cat {
     font-family: 'Bebas Neue', sans-serif;
@@ -118,7 +112,6 @@
     text-transform: uppercase;
   }
 
-  /* ── CENTER PANEL: Main Timer ── */
   #main-panel {
     display: flex;
     flex-direction: column;
@@ -137,7 +130,6 @@
     pointer-events: none;
   }
 
-  /* Mode title */
   #mode-title {
     font-family: 'Bebas Neue', sans-serif;
     font-size: 1.1rem;
@@ -147,7 +139,6 @@
     padding-top: 4px;
   }
 
-  /* Main clock display */
   #clock-display {
     text-align: center;
     line-height: 1;
@@ -160,7 +151,7 @@
     color: var(--text);
     letter-spacing: 0.05em;
     display: block;
-    transition: color 0.2s;
+    transition: color 0.2s, font-size 0.35s cubic-bezier(0.4,0,0.2,1);
   }
 
   #main-time.warning { color: var(--accent2); }
@@ -184,7 +175,6 @@
     height: 16px;
   }
 
-  /* Progress bar */
   #progress-wrap {
     width: 100%;
     height: 4px;
@@ -201,7 +191,6 @@
     border-radius: 2px;
   }
 
-  /* Controls */
   #controls {
     display: flex;
     align-items: center;
@@ -256,7 +245,6 @@
 
   #btn-reset:hover { color: var(--text); border-color: var(--accent2); }
 
-  /* ── RIGHT PANEL: Settings ── */
   #settings-panel {
     background: var(--surface);
     border-left: 1px solid var(--border);
@@ -322,11 +310,9 @@
 
   .spin-btn:hover { background: var(--accent); }
 
-  /* EMOM/Tabata extra settings */
   .extra-setting { display: none; }
   .extra-setting.visible { display: block; }
 
-  /* Log */
   #log-panel {
     flex: 1;
     overflow-y: auto;
@@ -344,7 +330,6 @@
 
   .log-entry.highlight { color: var(--green); }
 
-  /* Countdown overlay */
   #countdown-overlay {
     display: none;
     position: absolute;
@@ -377,7 +362,6 @@
     color: var(--muted);
   }
 
-  /* Sound toggle */
   #sound-toggle {
     background: none;
     border: 1px solid var(--border);
@@ -391,24 +375,13 @@
 
   #sound-toggle.on { border-color: var(--green); color: var(--green); }
 
-  /* Scrollbar styling */
   ::-webkit-scrollbar { width: 3px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 
-  .divider {
-    height: 1px;
-    background: var(--border);
-    margin: 2px 0;
-  }
+  .divider { height: 1px; background: var(--border); margin: 2px 0; }
 
-  /* Active highlight for sub-modes */
-  .submode-row {
-    display: flex;
-    gap: 4px;
-    flex-wrap: wrap;
-    padding: 2px 0;
-  }
+  .submode-row { display: flex; gap: 4px; flex-wrap: wrap; padding: 2px 0; }
 
   .submode-pill {
     background: var(--bg);
@@ -425,7 +398,6 @@
 
   .submode-pill.active { border-color: var(--accent2); color: var(--accent2); }
 
-  /* Info row inside clock */
   #info-row {
     display: flex;
     gap: 20px;
@@ -433,9 +405,7 @@
     justify-content: center;
   }
 
-  .info-chip {
-    text-align: center;
-  }
+  .info-chip { text-align: center; }
 
   .info-chip-val {
     font-family: 'Bebas Neue', sans-serif;
@@ -451,12 +421,60 @@
     color: var(--muted);
     text-transform: uppercase;
   }
+
+  /* ── FOCUS MODE ── */
+  #mode-panel, #settings-panel {
+    transition: width 0.35s cubic-bezier(0.4,0,0.2,1);
+  }
+
+  #app.focus {
+    grid-template-columns: 0 1fr 0;
+    transition: grid-template-columns 0.35s cubic-bezier(0.4,0,0.2,1);
+  }
+
+  #app.focus #mode-panel,
+  #app.focus #settings-panel {
+    width: 0;
+    padding: 0;
+    overflow: hidden;
+    border: none;
+  }
+
+  #app.focus #main-time {
+    font-size: clamp(8rem, 28vw, 22rem) !important;
+    letter-spacing: 0.02em;
+  }
+
+  #app.focus #mode-title { font-size: 1.4rem; letter-spacing: 0.4em; }
+  #app.focus #round-display { font-size: 2rem; }
+  #app.focus #phase-display { font-size: 1.1rem; }
+  #app.focus #info-row { gap: 40px; }
+  #app.focus .info-chip-val { font-size: 2rem; }
+  #app.focus .info-chip-lbl { font-size: 0.8rem; }
+  #app.focus #controls { gap: 20px; }
+  #app.focus #btn-start { font-size: 2rem; padding: 14px 40px; }
+  #app.focus #btn-stop, #app.focus #btn-reset { font-size: 1.6rem; padding: 14px 24px; }
+  #app.focus #sound-toggle { font-size: 1.4rem; width: 48px; height: 48px; }
+  #app.focus #progress-wrap { height: 6px; }
+
+  #focus-hint {
+    display: none;
+    position: absolute;
+    top: 8px;
+    right: 12px;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+    color: rgba(255,255,255,0.15);
+    pointer-events: none;
+  }
+
+  #app.focus #focus-hint { display: block; }
 </style>
 </head>
 <body>
 <div id="app">
 
-  <!-- LEFT: Mode selector -->
   <div id="mode-panel">
     <div class="panel-label">WOD TIMER</div>
 
@@ -511,7 +529,6 @@
     </button>
   </div>
 
-  <!-- CENTER: Timer display -->
   <div id="main-panel">
     <div id="mode-title">AMRAP</div>
 
@@ -544,14 +561,14 @@
       <button id="sound-toggle" class="on" onclick="toggleSound()" title="Sound">🔊</button>
     </div>
 
-    <!-- Countdown overlay -->
+    <div id="focus-hint">TAP TO SHOW CONTROLS</div>
+
     <div id="countdown-overlay">
       <div id="countdown-num">3</div>
       <div id="countdown-label">GET READY</div>
     </div>
   </div>
 
-  <!-- RIGHT: Settings -->
   <div id="settings-panel">
     <div class="setting-group" id="sg-worktime">
       <span class="setting-label">WORK TIME</span>
@@ -620,32 +637,16 @@
 </div>
 
 <script>
-// ── State ──────────────────────────────────────────────
 const state = {
-  mode: 'amrap',
-  running: false,
-  paused: false,
-  intervalId: null,
-  workTime: 20 * 60,     // seconds
-  restTime: 10,          // seconds
-  rounds: 8,
-  countdownSecs: 3,
-  currentRound: 0,
-  totalRounds: 0,
-  elapsed: 0,
-  phaseTime: 0,          // time remaining in current phase
-  phase: 'idle',         // 'work','rest','countdown','done'
-  sound: true,
+  mode: 'amrap', running: false, paused: false, intervalId: null,
+  workTime: 20 * 60, restTime: 10, rounds: 8, countdownSecs: 3,
+  currentRound: 0, totalRounds: 0, elapsed: 0, phaseTime: 0,
+  phase: 'idle', sound: true,
   alerts: { last30: true, last10: true, halfway: false },
   alerted: { last30: false, last10: false, halfway: false },
-  ladderType: 'up',
-  ladderReps: [],
-  ladderIdx: 0,
-  totalDuration: 0,
-  log: [],
+  ladderType: 'up', ladderReps: [], ladderIdx: 0, totalDuration: 0, log: [],
 };
 
-// ── Audio ──────────────────────────────────────────────
 let AudioCtx;
 function getAudioCtx() {
   if (!AudioCtx) AudioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -674,21 +675,20 @@ function beepCountdown(n) {
   else { beep(880, 0.15); setTimeout(() => beep(1100, 0.2), 160); }
 }
 
-// ── Mode Definitions ──────────────────────────────────
 const MODE_INFO = {
-  amrap:    { title: 'AMRAP',       desc: 'As Many Rounds As Possible', hasRest: false, hasRounds: false },
-  fortime:  { title: 'FOR TIME',    desc: 'Race the clock',             hasRest: false, hasRounds: false },
-  emom:     { title: 'EMOM',        desc: 'Every Minute On the Minute', hasRest: false, hasRounds: true  },
-  tabata:   { title: 'TABATA',      desc: '20s Work / 10s Rest',        hasRest: true,  hasRounds: true  },
-  interval: { title: 'INTERVAL',    desc: 'Work/Rest cycles',           hasRest: true,  hasRounds: true  },
-  ladder:   { title: 'LADDER',      desc: 'Ascending/Descending reps',  hasRest: true,  hasRounds: true  },
-  countdown:{ title: 'COUNTDOWN',   desc: 'Count down timer',           hasRest: false, hasRounds: false },
-  stopwatch:{ title: 'STOPWATCH',   desc: 'Count up',                   hasRest: false, hasRounds: false },
-  cap:      { title: 'TIME CAP',    desc: 'Work until the cap',         hasRest: false, hasRounds: false },
-  chipper:  { title: 'CHIPPER',     desc: 'Work through the list',      hasRest: false, hasRounds: false },
-  death_by: { title: 'DEATH BY',    desc: '+1 rep each minute',         hasRest: false, hasRounds: true  },
-  '21_15_9':{ title: '21 – 15 – 9', desc: 'Classic CrossFit rep scheme',hasRest: false, hasRounds: false },
-  custom:   { title: 'CUSTOM',      desc: 'Your settings',              hasRest: true,  hasRounds: true  },
+  amrap:    { title: 'AMRAP',        hasRest: false, hasRounds: false },
+  fortime:  { title: 'FOR TIME',     hasRest: false, hasRounds: false },
+  emom:     { title: 'EMOM',         hasRest: false, hasRounds: true  },
+  tabata:   { title: 'TABATA',       hasRest: true,  hasRounds: true  },
+  interval: { title: 'INTERVAL',     hasRest: true,  hasRounds: true  },
+  ladder:   { title: 'LADDER',       hasRest: true,  hasRounds: true  },
+  countdown:{ title: 'COUNTDOWN',    hasRest: false, hasRounds: false },
+  stopwatch:{ title: 'STOPWATCH',    hasRest: false, hasRounds: false },
+  cap:      { title: 'TIME CAP',     hasRest: false, hasRounds: false },
+  chipper:  { title: 'CHIPPER',      hasRest: false, hasRounds: false },
+  death_by: { title: 'DEATH BY',     hasRest: false, hasRounds: true  },
+  '21_15_9':{ title: '21 – 15 – 9',  hasRest: false, hasRounds: false },
+  custom:   { title: 'CUSTOM',       hasRest: true,  hasRounds: true  },
 };
 
 function selectMode(mode) {
@@ -696,15 +696,8 @@ function selectMode(mode) {
   state.mode = mode;
   document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
   document.getElementById('mode-title').textContent = MODE_INFO[mode].title;
-
-  // Show/hide rest time
-  const hasRest = MODE_INFO[mode].hasRest;
-  document.getElementById('sg-resttime').classList.toggle('visible', hasRest);
-
-  // Ladder panel
+  document.getElementById('sg-resttime').classList.toggle('visible', MODE_INFO[mode].hasRest);
   document.getElementById('sg-ladder').style.display = mode === 'ladder' ? 'block' : 'none';
-
-  // Set smart defaults
   applyModeDefaults(mode);
   syncSettings();
   resetTimer();
@@ -717,18 +710,15 @@ function applyModeDefaults(mode) {
   const rm = document.getElementById('rest-min');
   const rs = document.getElementById('rest-sec');
   const rd = document.getElementById('rounds-input');
-
-  if (mode === 'tabata')    { wm.value=0; ws.value=20; rm.value=0; rs.value=10; rd.value=8; }
-  else if (mode === 'emom') { wm.value=1; ws.value=0;  rd.value=10; }
+  if (mode === 'tabata')     { wm.value=0; ws.value=20; rm.value=0; rs.value=10; rd.value=8; }
+  else if (mode === 'emom')  { wm.value=1; ws.value=0;  rd.value=10; }
   else if (mode === 'interval') { wm.value=0; ws.value=40; rm.value=0; rs.value=20; rd.value=8; }
-  else if (mode === 'amrap')  { wm.value=20; ws.value=0; }
-  else if (mode === 'fortime'){ wm.value=0; ws.value=0; }
+  else if (mode === 'amrap') { wm.value=20; ws.value=0; }
+  else if (mode === 'fortime') { wm.value=0; ws.value=0; }
   else if (mode === 'death_by') { wm.value=1; ws.value=0; rd.value=20; }
   else if (mode === 'ladder') { wm.value=0; ws.value=45; rm.value=0; rs.value=15; rd.value=10; }
   else if (mode === 'countdown') { wm.value=3; ws.value=0; }
-  else if (mode === 'cap')  { wm.value=20; ws.value=0; }
-  else if (mode === 'chipper') { wm.value=0; ws.value=0; }
-  else if (mode === '21_15_9') { wm.value=0; ws.value=0; }
+  else if (mode === 'cap')   { wm.value=20; ws.value=0; }
 }
 
 function syncSettings() {
@@ -737,13 +727,10 @@ function syncSettings() {
   state.restTime = parseInt(document.getElementById('rest-min').value || 0) * 60
                  + parseInt(document.getElementById('rest-sec').value || 0);
   state.rounds = parseInt(document.getElementById('rounds-input').value || 1);
-  if (state.workTime < 1 && (state.mode !== 'stopwatch' && state.mode !== 'fortime' && state.mode !== 'chipper' && state.mode !== '21_15_9')) {
-    state.workTime = 60;
-  }
+  if (state.workTime < 1 && !['stopwatch','fortime','chipper','21_15_9'].includes(state.mode)) state.workTime = 60;
   updateDisplay();
 }
 
-// ── Adjusters ─────────────────────────────────────────
 function adjustTime(type, unit, delta) {
   const mId = type === 'work' ? 'work-min' : 'rest-min';
   const sId = type === 'work' ? 'work-sec' : 'rest-sec';
@@ -790,25 +777,16 @@ function toggleSound() {
   btn.classList.toggle('on', state.sound);
 }
 
-// ── Timer Core ────────────────────────────────────────
 function toggleStartPause() {
-  if (!state.running && !state.paused) {
-    startTimer();
-  } else if (state.running) {
-    pauseTimer();
-  } else if (state.paused) {
-    resumeTimer();
-  }
+  if (!state.running && !state.paused) startTimer();
+  else if (state.running) pauseTimer();
+  else if (state.paused) resumeTimer();
 }
 
 function startTimer() {
   syncSettings();
-
-  if (state.countdownSecs > 0) {
-    runCountdown(state.countdownSecs, () => beginWorkout());
-  } else {
-    beginWorkout();
-  }
+  if (state.countdownSecs > 0) runCountdown(state.countdownSecs, () => beginWorkout());
+  else beginWorkout();
 }
 
 function runCountdown(n, cb) {
@@ -817,84 +795,54 @@ function runCountdown(n, cb) {
   overlay.classList.add('show');
   numEl.textContent = n;
   beepCountdown(n);
-  if (n <= 0) {
-    overlay.classList.remove('show');
-    cb();
-    return;
-  }
+  if (n <= 0) { overlay.classList.remove('show'); cb(); return; }
   let cnt = n;
   const id = setInterval(() => {
     cnt--;
     numEl.textContent = cnt <= 0 ? 'GO!' : cnt;
     beepCountdown(cnt);
-    if (cnt <= 0) {
-      clearInterval(id);
-      setTimeout(() => { overlay.classList.remove('show'); cb(); }, 600);
-    }
+    if (cnt <= 0) { clearInterval(id); setTimeout(() => { overlay.classList.remove('show'); cb(); }, 600); }
   }, 1000);
 }
 
 function beginWorkout() {
-  state.running = true;
-  state.paused = false;
-  state.elapsed = 0;
+  state.running = true; state.paused = false; state.elapsed = 0;
   state.currentRound = 1;
   state.alerted = { last30: false, last10: false, halfway: false };
   addLog(`▶ START — ${MODE_INFO[state.mode].title}`);
-
   setupMode();
   updateBtn();
-  tick(); // immediate first tick
+  enterFocusMode();
+  tick();
   state.intervalId = setInterval(tick, 1000);
 }
 
 function setupMode() {
   const m = state.mode;
-  if (m === 'amrap' || m === 'cap' || m === 'countdown') {
-    state.phase = 'work';
-    state.phaseTime = state.workTime;
-    state.totalDuration = state.workTime;
-    state.totalRounds = 0;
-  } else if (m === 'fortime' || m === 'stopwatch' || m === 'chipper' || m === '21_15_9') {
+  if (['amrap','cap','countdown'].includes(m)) {
+    state.phase = 'work'; state.phaseTime = state.workTime; state.totalDuration = state.workTime; state.totalRounds = 0;
+  } else if (['fortime','stopwatch','chipper','21_15_9'].includes(m)) {
     state.phase = 'work';
     state.phaseTime = m === 'stopwatch' ? Infinity : state.workTime || 99 * 60 + 59;
-    state.totalDuration = state.phaseTime === Infinity ? 1 : state.phaseTime;
-    state.totalRounds = 0;
+    state.totalDuration = state.phaseTime === Infinity ? 1 : state.phaseTime; state.totalRounds = 0;
   } else if (m === 'emom') {
-    state.phase = 'work';
-    state.phaseTime = 60;
-    state.totalDuration = 60;
-    state.totalRounds = state.rounds;
-  } else if (m === 'tabata' || m === 'interval' || m === 'custom') {
-    state.phase = 'work';
-    state.phaseTime = state.workTime;
-    state.totalDuration = state.workTime;
-    state.totalRounds = state.rounds;
+    state.phase = 'work'; state.phaseTime = 60; state.totalDuration = 60; state.totalRounds = state.rounds;
+  } else if (['tabata','interval','custom'].includes(m)) {
+    state.phase = 'work'; state.phaseTime = state.workTime; state.totalDuration = state.workTime; state.totalRounds = state.rounds;
   } else if (m === 'ladder') {
-    buildLadder();
-    state.phase = 'work';
-    state.phaseTime = state.workTime;
-    state.totalDuration = state.workTime;
-    state.totalRounds = state.ladderReps.length;
-    state.ladderIdx = 0;
+    buildLadder(); state.phase = 'work'; state.phaseTime = state.workTime;
+    state.totalDuration = state.workTime; state.totalRounds = state.ladderReps.length; state.ladderIdx = 0;
   } else if (m === 'death_by') {
-    state.phase = 'work';
-    state.phaseTime = 60;
-    state.totalDuration = 60;
-    state.totalRounds = state.rounds;
+    state.phase = 'work'; state.phaseTime = 60; state.totalDuration = 60; state.totalRounds = state.rounds;
   }
 }
 
 function buildLadder() {
   const n = state.rounds;
-  if (state.ladderType === 'up') {
-    state.ladderReps = Array.from({length: n}, (_, i) => i + 1);
-  } else if (state.ladderType === 'down') {
-    state.ladderReps = Array.from({length: n}, (_, i) => n - i);
-  } else {
-    const up = Array.from({length: n}, (_, i) => i + 1);
-    const down = Array.from({length: n - 1}, (_, i) => n - 1 - i);
-    state.ladderReps = [...up, ...down];
+  if (state.ladderType === 'up') state.ladderReps = Array.from({length: n}, (_, i) => i + 1);
+  else if (state.ladderType === 'down') state.ladderReps = Array.from({length: n}, (_, i) => n - i);
+  else {
+    state.ladderReps = [...Array.from({length: n}, (_, i) => i + 1), ...Array.from({length: n-1}, (_, i) => n-1-i)];
     state.totalRounds = state.ladderReps.length;
   }
 }
@@ -902,26 +850,10 @@ function buildLadder() {
 function tick() {
   if (!state.running) return;
   state.elapsed++;
-
-  const m = state.mode;
-
-  // Stopwatch counts up
-  if (m === 'stopwatch') {
-    updateDisplay();
-    return;
-  }
-
-  // Countdown/work phase
+  if (state.mode === 'stopwatch') { updateDisplay(); return; }
   if (state.phaseTime !== Infinity) state.phaseTime--;
-
-  // Alerts
   checkAlerts();
-
-  if (state.phaseTime <= 0) {
-    handlePhaseEnd();
-    return;
-  }
-
+  if (state.phaseTime <= 0) { handlePhaseEnd(); return; }
   updateDisplay();
 }
 
@@ -930,148 +862,88 @@ function checkAlerts() {
   const td = state.totalDuration;
   if (state.alerts.last30 && !state.alerted.last30 && t === 30) { beepAlert(); state.alerted.last30 = true; }
   if (state.alerts.last10 && !state.alerted.last10 && t === 10) { beepAlert(); beepAlert(); state.alerted.last10 = true; }
-  if (state.alerts.halfway && !state.alerted.halfway && td > 0 && t === Math.floor(td / 2)) {
-    beepAlert(); state.alerted.halfway = true;
-  }
+  if (state.alerts.halfway && !state.alerted.halfway && td > 0 && t === Math.floor(td/2)) { beepAlert(); state.alerted.halfway = true; }
 }
 
 function handlePhaseEnd() {
   const m = state.mode;
   beepEnd();
-
-  if (['amrap', 'countdown', 'cap'].includes(m)) {
-    finishWorkout('TIME\'S UP');
-    return;
-  }
-
-  if (m === 'fortime' || m === 'chipper' || m === '21_15_9') {
-    finishWorkout('COMPLETE');
-    return;
-  }
-
+  if (['amrap','countdown','cap'].includes(m)) { finishWorkout("TIME'S UP"); return; }
+  if (['fortime','chipper','21_15_9'].includes(m)) { finishWorkout('COMPLETE'); return; }
   if (m === 'emom' || m === 'death_by') {
     if (state.currentRound >= state.rounds) { finishWorkout('DONE'); return; }
     addLog(`✓ Round ${state.currentRound} @ ${formatTime(state.elapsed)}`);
-    state.currentRound++;
-    state.alerted = { last30: false, last10: false, halfway: false };
-    state.phaseTime = 60;
-    state.totalDuration = 60;
-    beepStart();
-    updateDisplay();
-    return;
+    state.currentRound++; state.alerted = { last30: false, last10: false, halfway: false };
+    state.phaseTime = 60; state.totalDuration = 60; beepStart(); updateDisplay(); return;
   }
-
-  if (m === 'tabata' || m === 'interval' || m === 'custom') {
+  if (['tabata','interval','custom'].includes(m)) {
     if (state.phase === 'work') {
       if (state.restTime > 0) {
         addLog(`✓ Work R${state.currentRound} @ ${formatTime(state.elapsed)}`);
-        state.phase = 'rest';
-        state.phaseTime = state.restTime;
-        state.totalDuration = state.restTime;
-        state.alerted = { last30: false, last10: false, halfway: false };
-        beepAlert();
-      } else {
-        advanceRound(m);
-      }
-    } else {
-      advanceRound(m);
-    }
-    updateDisplay();
-    return;
+        state.phase = 'rest'; state.phaseTime = state.restTime; state.totalDuration = state.restTime;
+        state.alerted = { last30: false, last10: false, halfway: false }; beepAlert();
+      } else { advanceRound(m); }
+    } else { advanceRound(m); }
+    updateDisplay(); return;
   }
-
   if (m === 'ladder') {
     if (state.phase === 'work') {
       if (state.restTime > 0) {
         addLog(`✓ ${state.ladderReps[state.ladderIdx]} reps @ ${formatTime(state.elapsed)}`);
-        state.phase = 'rest';
-        state.phaseTime = state.restTime;
-        state.totalDuration = state.restTime;
-        state.alerted = { last30: false, last10: false, halfway: false };
-        beepAlert();
-      } else {
-        advanceLadder();
-      }
-    } else {
-      advanceLadder();
-    }
-    updateDisplay();
-    return;
+        state.phase = 'rest'; state.phaseTime = state.restTime; state.totalDuration = state.restTime;
+        state.alerted = { last30: false, last10: false, halfway: false }; beepAlert();
+      } else { advanceLadder(); }
+    } else { advanceLadder(); }
+    updateDisplay(); return;
   }
 }
 
 function advanceRound(m) {
   if (state.currentRound >= state.rounds) { finishWorkout('DONE'); return; }
   addLog(`✓ Round ${state.currentRound} done @ ${formatTime(state.elapsed)}`);
-  state.currentRound++;
-  state.phase = 'work';
-  state.phaseTime = state.workTime;
-  state.totalDuration = state.workTime;
-  state.alerted = { last30: false, last10: false, halfway: false };
-  beepStart();
+  state.currentRound++; state.phase = 'work'; state.phaseTime = state.workTime;
+  state.totalDuration = state.workTime; state.alerted = { last30: false, last10: false, halfway: false }; beepStart();
 }
 
 function advanceLadder() {
   state.ladderIdx++;
   if (state.ladderIdx >= state.ladderReps.length) { finishWorkout('DONE'); return; }
-  state.currentRound++;
-  state.phase = 'work';
-  state.phaseTime = state.workTime;
-  state.totalDuration = state.workTime;
-  state.alerted = { last30: false, last10: false, halfway: false };
-  beepStart();
+  state.currentRound++; state.phase = 'work'; state.phaseTime = state.workTime;
+  state.totalDuration = state.workTime; state.alerted = { last30: false, last10: false, halfway: false }; beepStart();
 }
 
 function finishWorkout(msg) {
   clearInterval(state.intervalId);
-  state.running = false;
-  state.paused = false;
-  state.phase = 'done';
+  state.running = false; state.paused = false; state.phase = 'done';
   addLog(`⚑ ${msg} — ${formatTime(state.elapsed)}`);
   document.getElementById('phase-display').textContent = msg;
   document.getElementById('main-time').className = 'danger';
   updateBtn();
-  // Final beep sequence
   [0, 300, 600, 900].forEach(d => setTimeout(() => beep(880, 0.15), d));
 }
 
 function pauseTimer() {
-  clearInterval(state.intervalId);
-  state.running = false;
-  state.paused = true;
-  addLog(`⏸ Paused @ ${formatTime(state.elapsed)}`);
-  updateBtn();
+  clearInterval(state.intervalId); state.running = false; state.paused = true;
+  addLog(`⏸ Paused @ ${formatTime(state.elapsed)}`); updateBtn();
 }
 
 function resumeTimer() {
-  state.running = true;
-  state.paused = false;
-  addLog(`▶ Resumed`);
-  state.intervalId = setInterval(tick, 1000);
-  updateBtn();
+  state.running = true; state.paused = false;
+  addLog(`▶ Resumed`); state.intervalId = setInterval(tick, 1000); updateBtn();
 }
 
 function stopTimer() {
-  clearInterval(state.intervalId);
-  state.running = false;
-  state.paused = false;
-  state.phase = 'idle';
+  clearInterval(state.intervalId); state.running = false; state.paused = false; state.phase = 'idle';
   if (state.elapsed > 0) addLog(`■ Stopped @ ${formatTime(state.elapsed)}`);
-  updateBtn();
-  updateDisplay();
+  exitFocusMode(); updateBtn(); updateDisplay();
 }
 
 function resetTimer() {
-  stopTimer();
-  state.elapsed = 0;
-  state.currentRound = 1;
-  state.phase = 'idle';
+  stopTimer(); state.elapsed = 0; state.currentRound = 1; state.phase = 'idle';
   state.alerted = { last30: false, last10: false, halfway: false };
-  document.getElementById('main-time').className = '';
-  updateDisplay();
+  document.getElementById('main-time').className = ''; updateDisplay();
 }
 
-// ── Display Update ─────────────────────────────────────
 function updateDisplay() {
   const m = state.mode;
   const timeEl = document.getElementById('main-time');
@@ -1085,8 +957,7 @@ function updateDisplay() {
   elapsedEl.textContent = formatTime(state.elapsed);
   roundsEl.textContent = state.currentRound;
 
-  // Main time display
-  if (m === 'stopwatch' || m === 'fortime' || m === 'chipper' || m === '21_15_9') {
+  if (['stopwatch','fortime','chipper','21_15_9'].includes(m)) {
     timeEl.textContent = formatTime(state.elapsed);
   } else if (state.phase === 'idle') {
     timeEl.textContent = formatTime(state.workTime);
@@ -1096,50 +967,34 @@ function updateDisplay() {
     timeEl.textContent = formatTime(state.phaseTime === Infinity ? state.elapsed : state.phaseTime);
   }
 
-  // Phase label
   if (state.phase === 'idle') phaseEl.textContent = 'READY';
   else if (state.phase === 'done') phaseEl.textContent = 'DONE';
   else if (state.phase === 'work') phaseEl.textContent = m === 'emom' ? 'GO!' : m === 'death_by' ? `DO ${state.currentRound} REPS` : 'WORK';
   else if (state.phase === 'rest') phaseEl.textContent = 'REST';
 
-  // Time color warning
   if (state.phase === 'work' && state.phaseTime !== Infinity) {
     if (state.phaseTime <= 5) timeEl.className = 'danger';
     else if (state.phaseTime <= 15) timeEl.className = 'warning';
     else timeEl.className = '';
   }
 
-  // Round display
-  if (state.totalRounds > 0) {
-    roundEl.textContent = `ROUND  ${state.currentRound} / ${state.totalRounds}`;
-  } else if (m === 'amrap') {
-    roundEl.textContent = `ROUND  ${state.currentRound}  ← TAP TO LOG`;
-  } else {
-    roundEl.textContent = '';
-  }
+  if (state.totalRounds > 0) roundEl.textContent = `ROUND  ${state.currentRound} / ${state.totalRounds}`;
+  else if (m === 'amrap') roundEl.textContent = `ROUND  ${state.currentRound}  ← TAP TO LOG`;
+  else roundEl.textContent = '';
 
-  // Ladder reps
   if (m === 'ladder' && state.ladderReps.length > 0 && state.ladderIdx < state.ladderReps.length) {
-    const reps = state.ladderReps[state.ladderIdx];
-    roundEl.textContent = `REPS: ${reps}  [${state.currentRound}/${state.totalRounds}]`;
+    roundEl.textContent = `REPS: ${state.ladderReps[state.ladderIdx]}  [${state.currentRound}/${state.totalRounds}]`;
   }
 
-  // Progress bar
   if (state.totalDuration > 0 && state.phaseTime !== Infinity) {
-    const pct = Math.max(0, Math.min(100, (1 - state.phaseTime / state.totalDuration) * 100));
-    progressEl.style.width = pct + '%';
-  } else if (m === 'stopwatch') {
-    progressEl.style.width = '0%';
-  }
+    progressEl.style.width = Math.max(0, Math.min(100, (1 - state.phaseTime / state.totalDuration) * 100)) + '%';
+  } else if (m === 'stopwatch') { progressEl.style.width = '0%'; }
 
-  // Next alert chip
   if (state.phase === 'work' && state.phaseTime !== Infinity) {
     if (state.alerts.last10 && !state.alerted.last10 && state.phaseTime > 10) nextEl.textContent = '10s';
     else if (state.alerts.last30 && !state.alerted.last30 && state.phaseTime > 30) nextEl.textContent = '30s';
     else nextEl.textContent = '—';
-  } else {
-    nextEl.textContent = '—';
-  }
+  } else { nextEl.textContent = '—'; }
 }
 
 function updateBtn() {
@@ -1149,19 +1004,26 @@ function updateBtn() {
   else { btn.textContent = '▶ START'; btn.classList.remove('paused'); }
 }
 
-// ── AMRAP round tap ────────────────────────────────────
+function enterFocusMode() { document.getElementById('app').classList.add('focus'); }
+function exitFocusMode()  { document.getElementById('app').classList.remove('focus'); }
+
+document.getElementById('main-panel').addEventListener('click', (e) => {
+  const app = document.getElementById('app');
+  if (!app.classList.contains('focus')) return;
+  if (e.target.closest('.ctrl-btn') || e.target.closest('#sound-toggle') || e.target.closest('#round-display')) return;
+  exitFocusMode();
+});
+
 document.getElementById('round-display').addEventListener('click', () => {
   if (state.mode === 'amrap' && state.running) {
     state.currentRound++;
     addLog(`+ Round ${state.currentRound - 1} ✓`);
-    beepStart();
-    updateDisplay();
+    beepStart(); updateDisplay();
   }
 });
 
-// ── Log ───────────────────────────────────────────────
 function addLog(msg) {
-  state.log.unshift({ time: new Date().toLocaleTimeString('en', {hour:'2-digit',minute:'2-digit',second:'2-digit'}), msg });
+  state.log.unshift({ msg });
   const panel = document.getElementById('log-panel');
   const el = document.createElement('div');
   el.className = 'log-entry' + (msg.startsWith('⚑') || msg.startsWith('✓') ? ' highlight' : '');
@@ -1170,30 +1032,23 @@ function addLog(msg) {
   if (panel.children.length > 20) panel.removeChild(panel.lastChild);
 }
 
-// ── Helpers ───────────────────────────────────────────
 function formatTime(s) {
   if (s === Infinity || s === undefined) return '∞';
   s = Math.max(0, Math.round(s));
-  const m = Math.floor(s / 60);
-  const sec = s % 60;
-  return `${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+  return `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
 }
 
-// ── Init ──────────────────────────────────────────────
 syncSettings();
 updateDisplay();
 addLog('WOD TIMER READY');
 
-// Prevent sleep on mobile (basic approach)
 let noSleepVideo;
 document.getElementById('btn-start').addEventListener('touchstart', () => {
   if (!noSleepVideo) {
     try {
       const v = document.createElement('video');
-      v.setAttribute('loop', ''); v.setAttribute('playsinline', '');
-      v.setAttribute('muted', ''); v.style.display = 'none';
-      document.body.appendChild(v);
-      v.play().catch(() => {});
+      v.setAttribute('loop',''); v.setAttribute('playsinline',''); v.setAttribute('muted',''); v.style.display='none';
+      document.body.appendChild(v); v.play().catch(()=>{});
       noSleepVideo = v;
     } catch(e) {}
   }
