@@ -1,0 +1,1203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>WOD TIMER</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;600;700&family=Share+Tech+Mono&display=swap');
+
+  :root {
+    --bg: #0a0a0a;
+    --surface: #111111;
+    --surface2: #1a1a1a;
+    --border: #2a2a2a;
+    --accent: #ff3c00;
+    --accent2: #ffd100;
+    --green: #00ff87;
+    --text: #f0f0f0;
+    --muted: #666;
+    --danger: #ff1744;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    width: 100%; height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Barlow Condensed', sans-serif;
+    overflow: hidden;
+    touch-action: manipulation;
+  }
+
+  /* Force landscape */
+  @media (orientation: portrait) {
+    body::before {
+      content: "↺  ROTATE TO LANDSCAPE";
+      position: fixed; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 2rem; letter-spacing: 0.2em;
+      background: var(--bg); color: var(--accent);
+      z-index: 9999;
+    }
+    #app { display: none; }
+  }
+
+  #app {
+    display: grid;
+    grid-template-columns: 200px 1fr 180px;
+    grid-template-rows: 100vh;
+    height: 100vh;
+    width: 100vw;
+  }
+
+  /* ── LEFT PANEL: Mode Selector ── */
+  #mode-panel {
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 8px 0;
+  }
+
+  .panel-label {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 0.65rem;
+    letter-spacing: 0.25em;
+    color: var(--muted);
+    padding: 6px 12px 4px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 4px;
+  }
+
+  .mode-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    cursor: pointer;
+    border: none;
+    background: none;
+    color: #888;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 600;
+    font-size: 0.8rem;
+    letter-spacing: 0.05em;
+    text-align: left;
+    width: 100%;
+    transition: all 0.15s;
+    border-left: 3px solid transparent;
+    position: relative;
+  }
+
+  .mode-btn:hover { background: var(--surface2); color: var(--text); }
+  .mode-btn.active {
+    background: var(--surface2);
+    color: var(--accent);
+    border-left-color: var(--accent);
+  }
+
+  .mode-icon {
+    font-size: 1rem;
+    width: 18px;
+    flex-shrink: 0;
+  }
+
+  .mode-cat {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+    color: var(--muted);
+    padding: 8px 12px 2px;
+    text-transform: uppercase;
+  }
+
+  /* ── CENTER PANEL: Main Timer ── */
+  #main-panel {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 16px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  #main-panel::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 50% 30%, rgba(255,60,0,0.05) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  /* Mode title */
+  #mode-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.1rem;
+    letter-spacing: 0.3em;
+    color: var(--muted);
+    text-align: center;
+    padding-top: 4px;
+  }
+
+  /* Main clock display */
+  #clock-display {
+    text-align: center;
+    line-height: 1;
+    position: relative;
+  }
+
+  #main-time {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(4rem, 12vw, 8rem);
+    color: var(--text);
+    letter-spacing: 0.05em;
+    display: block;
+    transition: color 0.2s;
+  }
+
+  #main-time.warning { color: var(--accent2); }
+  #main-time.danger { color: var(--danger); animation: blink 0.5s infinite; }
+
+  @keyframes blink { 50% { opacity: 0.4; } }
+
+  #round-display {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.2rem;
+    letter-spacing: 0.3em;
+    color: var(--accent);
+  }
+
+  #phase-display {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.15em;
+    color: var(--green);
+    text-transform: uppercase;
+    height: 16px;
+  }
+
+  /* Progress bar */
+  #progress-wrap {
+    width: 100%;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  #progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    width: 0%;
+    transition: width 0.1s linear;
+    border-radius: 2px;
+  }
+
+  /* Controls */
+  #controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding-bottom: 6px;
+  }
+
+  .ctrl-btn {
+    border: none;
+    cursor: pointer;
+    font-family: 'Bebas Neue', sans-serif;
+    letter-spacing: 0.1em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: all 0.1s;
+    border-radius: 3px;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .ctrl-btn:active { transform: scale(0.93); }
+
+  #btn-start {
+    background: var(--accent);
+    color: white;
+    font-size: 1.4rem;
+    padding: 10px 28px;
+    min-width: 110px;
+  }
+
+  #btn-start:hover { background: #ff5500; }
+  #btn-start.paused { background: var(--green); color: #000; }
+
+  #btn-stop {
+    background: var(--surface2);
+    color: var(--text);
+    font-size: 1.1rem;
+    padding: 10px 16px;
+    border: 1px solid var(--border);
+  }
+
+  #btn-stop:hover { border-color: var(--danger); color: var(--danger); }
+
+  #btn-reset {
+    background: var(--surface2);
+    color: var(--muted);
+    font-size: 1.1rem;
+    padding: 10px 16px;
+    border: 1px solid var(--border);
+  }
+
+  #btn-reset:hover { color: var(--text); border-color: var(--accent2); }
+
+  /* ── RIGHT PANEL: Settings ── */
+  #settings-panel {
+    background: var(--surface);
+    border-left: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    padding: 8px;
+    overflow-y: auto;
+    gap: 6px;
+  }
+
+  .setting-group {
+    background: var(--surface2);
+    border-radius: 4px;
+    padding: 8px;
+    border: 1px solid var(--border);
+  }
+
+  .setting-label {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 0.65rem;
+    letter-spacing: 0.2em;
+    color: var(--muted);
+    margin-bottom: 4px;
+    display: block;
+  }
+
+  .setting-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .num-input {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.95rem;
+    text-align: center;
+    width: 52px;
+    padding: 4px 2px;
+    border-radius: 3px;
+  }
+
+  .num-input:focus { outline: none; border-color: var(--accent); }
+
+  .colon {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1rem;
+    color: var(--muted);
+  }
+
+  .spin-btn {
+    background: var(--border);
+    border: none;
+    color: var(--text);
+    width: 22px; height: 22px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  .spin-btn:hover { background: var(--accent); }
+
+  /* EMOM/Tabata extra settings */
+  .extra-setting { display: none; }
+  .extra-setting.visible { display: block; }
+
+  /* Log */
+  #log-panel {
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0;
+  }
+
+  .log-entry {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.6rem;
+    color: var(--muted);
+    padding: 2px 0;
+    border-bottom: 1px solid var(--border);
+    letter-spacing: 0.05em;
+  }
+
+  .log-entry.highlight { color: var(--green); }
+
+  /* Countdown overlay */
+  #countdown-overlay {
+    display: none;
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.85);
+    z-index: 10;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+  }
+
+  #countdown-overlay.show { display: flex; }
+
+  #countdown-num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(5rem, 15vw, 10rem);
+    color: var(--accent);
+    animation: pop 1s ease-out;
+  }
+
+  @keyframes pop {
+    0% { transform: scale(1.5); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  #countdown-label {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1rem;
+    letter-spacing: 0.3em;
+    color: var(--muted);
+  }
+
+  /* Sound toggle */
+  #sound-toggle {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 1rem;
+    width: 32px; height: 32px;
+    border-radius: 3px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  #sound-toggle.on { border-color: var(--green); color: var(--green); }
+
+  /* Scrollbar styling */
+  ::-webkit-scrollbar { width: 3px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 2px 0;
+  }
+
+  /* Active highlight for sub-modes */
+  .submode-row {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+    padding: 2px 0;
+  }
+
+  .submode-pill {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    padding: 2px 6px;
+    border-radius: 2px;
+    cursor: pointer;
+  }
+
+  .submode-pill.active { border-color: var(--accent2); color: var(--accent2); }
+
+  /* Info row inside clock */
+  #info-row {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .info-chip {
+    text-align: center;
+  }
+
+  .info-chip-val {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.3rem;
+    color: var(--accent2);
+    display: block;
+    line-height: 1;
+  }
+
+  .info-chip-lbl {
+    font-size: 0.6rem;
+    letter-spacing: 0.15em;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- LEFT: Mode selector -->
+  <div id="mode-panel">
+    <div class="panel-label">WOD TIMER</div>
+
+    <div class="mode-cat">Standard</div>
+    <button class="mode-btn active" data-mode="amrap" onclick="selectMode('amrap')">
+      <span class="mode-icon">🔄</span> AMRAP
+    </button>
+    <button class="mode-btn" data-mode="fortime" onclick="selectMode('fortime')">
+      <span class="mode-icon">⚡</span> FOR TIME
+    </button>
+    <button class="mode-btn" data-mode="emom" onclick="selectMode('emom')">
+      <span class="mode-icon">📡</span> EMOM
+    </button>
+
+    <div class="divider"></div>
+    <div class="mode-cat">Interval</div>
+    <button class="mode-btn" data-mode="tabata" onclick="selectMode('tabata')">
+      <span class="mode-icon">🔥</span> TABATA
+    </button>
+    <button class="mode-btn" data-mode="interval" onclick="selectMode('interval')">
+      <span class="mode-icon">⏱</span> INTERVAL
+    </button>
+    <button class="mode-btn" data-mode="ladder" onclick="selectMode('ladder')">
+      <span class="mode-icon">📶</span> LADDER
+    </button>
+
+    <div class="divider"></div>
+    <div class="mode-cat">Countdown</div>
+    <button class="mode-btn" data-mode="countdown" onclick="selectMode('countdown')">
+      <span class="mode-icon">⬇</span> COUNTDOWN
+    </button>
+    <button class="mode-btn" data-mode="stopwatch" onclick="selectMode('stopwatch')">
+      <span class="mode-icon">⬆</span> STOPWATCH
+    </button>
+    <button class="mode-btn" data-mode="cap" onclick="selectMode('cap')">
+      <span class="mode-icon">🚫</span> TIME CAP
+    </button>
+
+    <div class="divider"></div>
+    <div class="mode-cat">Complex</div>
+    <button class="mode-btn" data-mode="chipper" onclick="selectMode('chipper')">
+      <span class="mode-icon">🪓</span> CHIPPER
+    </button>
+    <button class="mode-btn" data-mode="death_by" onclick="selectMode('death_by')">
+      <span class="mode-icon">💀</span> DEATH BY
+    </button>
+    <button class="mode-btn" data-mode="21_15_9" onclick="selectMode('21_15_9')">
+      <span class="mode-icon">🎯</span> 21-15-9
+    </button>
+    <button class="mode-btn" data-mode="custom" onclick="selectMode('custom')">
+      <span class="mode-icon">⚙️</span> CUSTOM
+    </button>
+  </div>
+
+  <!-- CENTER: Timer display -->
+  <div id="main-panel">
+    <div id="mode-title">AMRAP</div>
+
+    <div id="clock-display">
+      <span id="phase-display">READY</span>
+      <span id="main-time">20:00</span>
+      <div id="round-display">ROUND — / —</div>
+      <div id="info-row">
+        <div class="info-chip">
+          <span class="info-chip-val" id="chip-elapsed">00:00</span>
+          <span class="info-chip-lbl">Elapsed</span>
+        </div>
+        <div class="info-chip">
+          <span class="info-chip-val" id="chip-rounds">0</span>
+          <span class="info-chip-lbl">Rounds</span>
+        </div>
+        <div class="info-chip">
+          <span class="info-chip-val" id="chip-next">—</span>
+          <span class="info-chip-lbl">Next Alert</span>
+        </div>
+      </div>
+    </div>
+
+    <div id="progress-wrap"><div id="progress-bar"></div></div>
+
+    <div id="controls">
+      <button class="ctrl-btn" id="btn-reset" onclick="resetTimer()">↺ RESET</button>
+      <button class="ctrl-btn" id="btn-start" onclick="toggleStartPause()">▶ START</button>
+      <button class="ctrl-btn" id="btn-stop" onclick="stopTimer()">■ STOP</button>
+      <button id="sound-toggle" class="on" onclick="toggleSound()" title="Sound">🔊</button>
+    </div>
+
+    <!-- Countdown overlay -->
+    <div id="countdown-overlay">
+      <div id="countdown-num">3</div>
+      <div id="countdown-label">GET READY</div>
+    </div>
+  </div>
+
+  <!-- RIGHT: Settings -->
+  <div id="settings-panel">
+    <div class="setting-group" id="sg-worktime">
+      <span class="setting-label">WORK TIME</span>
+      <div class="setting-row">
+        <button class="spin-btn" onclick="adjustTime('work','m',-1)">−</button>
+        <input class="num-input" id="work-min" type="number" min="0" max="99" value="20" onchange="syncSettings()">
+        <span class="colon">:</span>
+        <input class="num-input" id="work-sec" type="number" min="0" max="59" value="0" onchange="syncSettings()">
+        <button class="spin-btn" onclick="adjustTime('work','m',1)">+</button>
+      </div>
+    </div>
+
+    <div class="setting-group extra-setting" id="sg-resttime">
+      <span class="setting-label">REST TIME</span>
+      <div class="setting-row">
+        <button class="spin-btn" onclick="adjustTime('rest','m',-1)">−</button>
+        <input class="num-input" id="rest-min" type="number" min="0" max="99" value="0" onchange="syncSettings()">
+        <span class="colon">:</span>
+        <input class="num-input" id="rest-sec" type="number" min="0" max="59" value="10" onchange="syncSettings()">
+        <button class="spin-btn" onclick="adjustTime('rest','m',1)">+</button>
+      </div>
+    </div>
+
+    <div class="setting-group">
+      <span class="setting-label">ROUNDS / REPS</span>
+      <div class="setting-row">
+        <button class="spin-btn" onclick="adjustNum('rounds',-1)">−</button>
+        <input class="num-input" id="rounds-input" type="number" min="1" max="99" value="8" onchange="syncSettings()">
+        <button class="spin-btn" onclick="adjustNum('rounds',1)">+</button>
+      </div>
+    </div>
+
+    <div class="setting-group extra-setting" id="sg-countdown">
+      <span class="setting-label">COUNTDOWN START</span>
+      <div class="submode-row">
+        <span class="submode-pill active" onclick="selectCountdown(this,3)">3s</span>
+        <span class="submode-pill" onclick="selectCountdown(this,5)">5s</span>
+        <span class="submode-pill" onclick="selectCountdown(this,10)">10s</span>
+        <span class="submode-pill" onclick="selectCountdown(this,0)">OFF</span>
+      </div>
+    </div>
+
+    <div class="setting-group">
+      <span class="setting-label">ALERTS</span>
+      <div class="submode-row">
+        <span class="submode-pill active" onclick="toggleAlert(this,'last30')">Last 30s</span>
+        <span class="submode-pill active" onclick="toggleAlert(this,'last10')">Last 10s</span>
+        <span class="submode-pill" onclick="toggleAlert(this,'halfway')">½ Way</span>
+      </div>
+    </div>
+
+    <div class="setting-group" id="sg-ladder" style="display:none">
+      <span class="setting-label">LADDER TYPE</span>
+      <div class="submode-row">
+        <span class="submode-pill active" onclick="selectLadder(this,'up')">UP</span>
+        <span class="submode-pill" onclick="selectLadder(this,'down')">DOWN</span>
+        <span class="submode-pill" onclick="selectLadder(this,'updown')">UP/DOWN</span>
+      </div>
+    </div>
+
+    <div class="setting-group" id="log-wrap">
+      <span class="setting-label">LOG</span>
+      <div id="log-panel"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── State ──────────────────────────────────────────────
+const state = {
+  mode: 'amrap',
+  running: false,
+  paused: false,
+  intervalId: null,
+  workTime: 20 * 60,     // seconds
+  restTime: 10,          // seconds
+  rounds: 8,
+  countdownSecs: 3,
+  currentRound: 0,
+  totalRounds: 0,
+  elapsed: 0,
+  phaseTime: 0,          // time remaining in current phase
+  phase: 'idle',         // 'work','rest','countdown','done'
+  sound: true,
+  alerts: { last30: true, last10: true, halfway: false },
+  alerted: { last30: false, last10: false, halfway: false },
+  ladderType: 'up',
+  ladderReps: [],
+  ladderIdx: 0,
+  totalDuration: 0,
+  log: [],
+};
+
+// ── Audio ──────────────────────────────────────────────
+let AudioCtx;
+function getAudioCtx() {
+  if (!AudioCtx) AudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return AudioCtx;
+}
+
+function beep(freq = 880, dur = 0.12, type = 'square', vol = 0.3) {
+  if (!state.sound) return;
+  try {
+    const ctx = getAudioCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.type = type; osc.frequency.value = freq;
+    gain.gain.setValueAtTime(vol, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
+    osc.start(); osc.stop(ctx.currentTime + dur);
+  } catch(e) {}
+}
+
+function beepStart() { beep(660, 0.15); setTimeout(() => beep(880, 0.2), 160); }
+function beepEnd()   { beep(330, 0.3, 'sawtooth'); setTimeout(() => beep(220, 0.4, 'sawtooth'), 300); }
+function beepAlert() { beep(440, 0.08); setTimeout(() => beep(440, 0.08), 120); }
+function beepCountdown(n) {
+  if (n > 0) beep(660, 0.1);
+  else { beep(880, 0.15); setTimeout(() => beep(1100, 0.2), 160); }
+}
+
+// ── Mode Definitions ──────────────────────────────────
+const MODE_INFO = {
+  amrap:    { title: 'AMRAP',       desc: 'As Many Rounds As Possible', hasRest: false, hasRounds: false },
+  fortime:  { title: 'FOR TIME',    desc: 'Race the clock',             hasRest: false, hasRounds: false },
+  emom:     { title: 'EMOM',        desc: 'Every Minute On the Minute', hasRest: false, hasRounds: true  },
+  tabata:   { title: 'TABATA',      desc: '20s Work / 10s Rest',        hasRest: true,  hasRounds: true  },
+  interval: { title: 'INTERVAL',    desc: 'Work/Rest cycles',           hasRest: true,  hasRounds: true  },
+  ladder:   { title: 'LADDER',      desc: 'Ascending/Descending reps',  hasRest: true,  hasRounds: true  },
+  countdown:{ title: 'COUNTDOWN',   desc: 'Count down timer',           hasRest: false, hasRounds: false },
+  stopwatch:{ title: 'STOPWATCH',   desc: 'Count up',                   hasRest: false, hasRounds: false },
+  cap:      { title: 'TIME CAP',    desc: 'Work until the cap',         hasRest: false, hasRounds: false },
+  chipper:  { title: 'CHIPPER',     desc: 'Work through the list',      hasRest: false, hasRounds: false },
+  death_by: { title: 'DEATH BY',    desc: '+1 rep each minute',         hasRest: false, hasRounds: true  },
+  '21_15_9':{ title: '21 – 15 – 9', desc: 'Classic CrossFit rep scheme',hasRest: false, hasRounds: false },
+  custom:   { title: 'CUSTOM',      desc: 'Your settings',              hasRest: true,  hasRounds: true  },
+};
+
+function selectMode(mode) {
+  if (state.running) stopTimer();
+  state.mode = mode;
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
+  document.getElementById('mode-title').textContent = MODE_INFO[mode].title;
+
+  // Show/hide rest time
+  const hasRest = MODE_INFO[mode].hasRest;
+  document.getElementById('sg-resttime').classList.toggle('visible', hasRest);
+
+  // Ladder panel
+  document.getElementById('sg-ladder').style.display = mode === 'ladder' ? 'block' : 'none';
+
+  // Set smart defaults
+  applyModeDefaults(mode);
+  syncSettings();
+  resetTimer();
+  addLog(`Mode: ${MODE_INFO[mode].title}`);
+}
+
+function applyModeDefaults(mode) {
+  const wm = document.getElementById('work-min');
+  const ws = document.getElementById('work-sec');
+  const rm = document.getElementById('rest-min');
+  const rs = document.getElementById('rest-sec');
+  const rd = document.getElementById('rounds-input');
+
+  if (mode === 'tabata')    { wm.value=0; ws.value=20; rm.value=0; rs.value=10; rd.value=8; }
+  else if (mode === 'emom') { wm.value=1; ws.value=0;  rd.value=10; }
+  else if (mode === 'interval') { wm.value=0; ws.value=40; rm.value=0; rs.value=20; rd.value=8; }
+  else if (mode === 'amrap')  { wm.value=20; ws.value=0; }
+  else if (mode === 'fortime'){ wm.value=0; ws.value=0; }
+  else if (mode === 'death_by') { wm.value=1; ws.value=0; rd.value=20; }
+  else if (mode === 'ladder') { wm.value=0; ws.value=45; rm.value=0; rs.value=15; rd.value=10; }
+  else if (mode === 'countdown') { wm.value=3; ws.value=0; }
+  else if (mode === 'cap')  { wm.value=20; ws.value=0; }
+  else if (mode === 'chipper') { wm.value=0; ws.value=0; }
+  else if (mode === '21_15_9') { wm.value=0; ws.value=0; }
+}
+
+function syncSettings() {
+  state.workTime = parseInt(document.getElementById('work-min').value || 0) * 60
+                 + parseInt(document.getElementById('work-sec').value || 0);
+  state.restTime = parseInt(document.getElementById('rest-min').value || 0) * 60
+                 + parseInt(document.getElementById('rest-sec').value || 0);
+  state.rounds = parseInt(document.getElementById('rounds-input').value || 1);
+  if (state.workTime < 1 && (state.mode !== 'stopwatch' && state.mode !== 'fortime' && state.mode !== 'chipper' && state.mode !== '21_15_9')) {
+    state.workTime = 60;
+  }
+  updateDisplay();
+}
+
+// ── Adjusters ─────────────────────────────────────────
+function adjustTime(type, unit, delta) {
+  const mId = type === 'work' ? 'work-min' : 'rest-min';
+  const sId = type === 'work' ? 'work-sec' : 'rest-sec';
+  const mEl = document.getElementById(mId);
+  const sEl = document.getElementById(sId);
+  if (unit === 'm') {
+    mEl.value = Math.max(0, Math.min(99, parseInt(mEl.value) + delta));
+  } else {
+    let s = parseInt(sEl.value) + delta;
+    if (s < 0) { s = 55; mEl.value = Math.max(0, parseInt(mEl.value) - 1); }
+    if (s >= 60) { s = 0; mEl.value = Math.min(99, parseInt(mEl.value) + 1); }
+    sEl.value = s;
+  }
+  syncSettings();
+}
+
+function adjustNum(type, delta) {
+  const el = document.getElementById('rounds-input');
+  el.value = Math.max(1, Math.min(99, parseInt(el.value) + delta));
+  syncSettings();
+}
+
+function selectCountdown(el, val) {
+  document.querySelectorAll('#sg-countdown .submode-pill').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  state.countdownSecs = val;
+}
+
+function toggleAlert(el, key) {
+  el.classList.toggle('active');
+  state.alerts[key] = el.classList.contains('active');
+}
+
+function selectLadder(el, type) {
+  document.querySelectorAll('#sg-ladder .submode-pill').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  state.ladderType = type;
+}
+
+function toggleSound() {
+  state.sound = !state.sound;
+  const btn = document.getElementById('sound-toggle');
+  btn.textContent = state.sound ? '🔊' : '🔇';
+  btn.classList.toggle('on', state.sound);
+}
+
+// ── Timer Core ────────────────────────────────────────
+function toggleStartPause() {
+  if (!state.running && !state.paused) {
+    startTimer();
+  } else if (state.running) {
+    pauseTimer();
+  } else if (state.paused) {
+    resumeTimer();
+  }
+}
+
+function startTimer() {
+  syncSettings();
+
+  if (state.countdownSecs > 0) {
+    runCountdown(state.countdownSecs, () => beginWorkout());
+  } else {
+    beginWorkout();
+  }
+}
+
+function runCountdown(n, cb) {
+  const overlay = document.getElementById('countdown-overlay');
+  const numEl = document.getElementById('countdown-num');
+  overlay.classList.add('show');
+  numEl.textContent = n;
+  beepCountdown(n);
+  if (n <= 0) {
+    overlay.classList.remove('show');
+    cb();
+    return;
+  }
+  let cnt = n;
+  const id = setInterval(() => {
+    cnt--;
+    numEl.textContent = cnt <= 0 ? 'GO!' : cnt;
+    beepCountdown(cnt);
+    if (cnt <= 0) {
+      clearInterval(id);
+      setTimeout(() => { overlay.classList.remove('show'); cb(); }, 600);
+    }
+  }, 1000);
+}
+
+function beginWorkout() {
+  state.running = true;
+  state.paused = false;
+  state.elapsed = 0;
+  state.currentRound = 1;
+  state.alerted = { last30: false, last10: false, halfway: false };
+  addLog(`▶ START — ${MODE_INFO[state.mode].title}`);
+
+  setupMode();
+  updateBtn();
+  tick(); // immediate first tick
+  state.intervalId = setInterval(tick, 1000);
+}
+
+function setupMode() {
+  const m = state.mode;
+  if (m === 'amrap' || m === 'cap' || m === 'countdown') {
+    state.phase = 'work';
+    state.phaseTime = state.workTime;
+    state.totalDuration = state.workTime;
+    state.totalRounds = 0;
+  } else if (m === 'fortime' || m === 'stopwatch' || m === 'chipper' || m === '21_15_9') {
+    state.phase = 'work';
+    state.phaseTime = m === 'stopwatch' ? Infinity : state.workTime || 99 * 60 + 59;
+    state.totalDuration = state.phaseTime === Infinity ? 1 : state.phaseTime;
+    state.totalRounds = 0;
+  } else if (m === 'emom') {
+    state.phase = 'work';
+    state.phaseTime = 60;
+    state.totalDuration = 60;
+    state.totalRounds = state.rounds;
+  } else if (m === 'tabata' || m === 'interval' || m === 'custom') {
+    state.phase = 'work';
+    state.phaseTime = state.workTime;
+    state.totalDuration = state.workTime;
+    state.totalRounds = state.rounds;
+  } else if (m === 'ladder') {
+    buildLadder();
+    state.phase = 'work';
+    state.phaseTime = state.workTime;
+    state.totalDuration = state.workTime;
+    state.totalRounds = state.ladderReps.length;
+    state.ladderIdx = 0;
+  } else if (m === 'death_by') {
+    state.phase = 'work';
+    state.phaseTime = 60;
+    state.totalDuration = 60;
+    state.totalRounds = state.rounds;
+  }
+}
+
+function buildLadder() {
+  const n = state.rounds;
+  if (state.ladderType === 'up') {
+    state.ladderReps = Array.from({length: n}, (_, i) => i + 1);
+  } else if (state.ladderType === 'down') {
+    state.ladderReps = Array.from({length: n}, (_, i) => n - i);
+  } else {
+    const up = Array.from({length: n}, (_, i) => i + 1);
+    const down = Array.from({length: n - 1}, (_, i) => n - 1 - i);
+    state.ladderReps = [...up, ...down];
+    state.totalRounds = state.ladderReps.length;
+  }
+}
+
+function tick() {
+  if (!state.running) return;
+  state.elapsed++;
+
+  const m = state.mode;
+
+  // Stopwatch counts up
+  if (m === 'stopwatch') {
+    updateDisplay();
+    return;
+  }
+
+  // Countdown/work phase
+  if (state.phaseTime !== Infinity) state.phaseTime--;
+
+  // Alerts
+  checkAlerts();
+
+  if (state.phaseTime <= 0) {
+    handlePhaseEnd();
+    return;
+  }
+
+  updateDisplay();
+}
+
+function checkAlerts() {
+  const t = state.phaseTime;
+  const td = state.totalDuration;
+  if (state.alerts.last30 && !state.alerted.last30 && t === 30) { beepAlert(); state.alerted.last30 = true; }
+  if (state.alerts.last10 && !state.alerted.last10 && t === 10) { beepAlert(); beepAlert(); state.alerted.last10 = true; }
+  if (state.alerts.halfway && !state.alerted.halfway && td > 0 && t === Math.floor(td / 2)) {
+    beepAlert(); state.alerted.halfway = true;
+  }
+}
+
+function handlePhaseEnd() {
+  const m = state.mode;
+  beepEnd();
+
+  if (['amrap', 'countdown', 'cap'].includes(m)) {
+    finishWorkout('TIME\'S UP');
+    return;
+  }
+
+  if (m === 'fortime' || m === 'chipper' || m === '21_15_9') {
+    finishWorkout('COMPLETE');
+    return;
+  }
+
+  if (m === 'emom' || m === 'death_by') {
+    if (state.currentRound >= state.rounds) { finishWorkout('DONE'); return; }
+    addLog(`✓ Round ${state.currentRound} @ ${formatTime(state.elapsed)}`);
+    state.currentRound++;
+    state.alerted = { last30: false, last10: false, halfway: false };
+    state.phaseTime = 60;
+    state.totalDuration = 60;
+    beepStart();
+    updateDisplay();
+    return;
+  }
+
+  if (m === 'tabata' || m === 'interval' || m === 'custom') {
+    if (state.phase === 'work') {
+      if (state.restTime > 0) {
+        addLog(`✓ Work R${state.currentRound} @ ${formatTime(state.elapsed)}`);
+        state.phase = 'rest';
+        state.phaseTime = state.restTime;
+        state.totalDuration = state.restTime;
+        state.alerted = { last30: false, last10: false, halfway: false };
+        beepAlert();
+      } else {
+        advanceRound(m);
+      }
+    } else {
+      advanceRound(m);
+    }
+    updateDisplay();
+    return;
+  }
+
+  if (m === 'ladder') {
+    if (state.phase === 'work') {
+      if (state.restTime > 0) {
+        addLog(`✓ ${state.ladderReps[state.ladderIdx]} reps @ ${formatTime(state.elapsed)}`);
+        state.phase = 'rest';
+        state.phaseTime = state.restTime;
+        state.totalDuration = state.restTime;
+        state.alerted = { last30: false, last10: false, halfway: false };
+        beepAlert();
+      } else {
+        advanceLadder();
+      }
+    } else {
+      advanceLadder();
+    }
+    updateDisplay();
+    return;
+  }
+}
+
+function advanceRound(m) {
+  if (state.currentRound >= state.rounds) { finishWorkout('DONE'); return; }
+  addLog(`✓ Round ${state.currentRound} done @ ${formatTime(state.elapsed)}`);
+  state.currentRound++;
+  state.phase = 'work';
+  state.phaseTime = state.workTime;
+  state.totalDuration = state.workTime;
+  state.alerted = { last30: false, last10: false, halfway: false };
+  beepStart();
+}
+
+function advanceLadder() {
+  state.ladderIdx++;
+  if (state.ladderIdx >= state.ladderReps.length) { finishWorkout('DONE'); return; }
+  state.currentRound++;
+  state.phase = 'work';
+  state.phaseTime = state.workTime;
+  state.totalDuration = state.workTime;
+  state.alerted = { last30: false, last10: false, halfway: false };
+  beepStart();
+}
+
+function finishWorkout(msg) {
+  clearInterval(state.intervalId);
+  state.running = false;
+  state.paused = false;
+  state.phase = 'done';
+  addLog(`⚑ ${msg} — ${formatTime(state.elapsed)}`);
+  document.getElementById('phase-display').textContent = msg;
+  document.getElementById('main-time').className = 'danger';
+  updateBtn();
+  // Final beep sequence
+  [0, 300, 600, 900].forEach(d => setTimeout(() => beep(880, 0.15), d));
+}
+
+function pauseTimer() {
+  clearInterval(state.intervalId);
+  state.running = false;
+  state.paused = true;
+  addLog(`⏸ Paused @ ${formatTime(state.elapsed)}`);
+  updateBtn();
+}
+
+function resumeTimer() {
+  state.running = true;
+  state.paused = false;
+  addLog(`▶ Resumed`);
+  state.intervalId = setInterval(tick, 1000);
+  updateBtn();
+}
+
+function stopTimer() {
+  clearInterval(state.intervalId);
+  state.running = false;
+  state.paused = false;
+  state.phase = 'idle';
+  if (state.elapsed > 0) addLog(`■ Stopped @ ${formatTime(state.elapsed)}`);
+  updateBtn();
+  updateDisplay();
+}
+
+function resetTimer() {
+  stopTimer();
+  state.elapsed = 0;
+  state.currentRound = 1;
+  state.phase = 'idle';
+  state.alerted = { last30: false, last10: false, halfway: false };
+  document.getElementById('main-time').className = '';
+  updateDisplay();
+}
+
+// ── Display Update ─────────────────────────────────────
+function updateDisplay() {
+  const m = state.mode;
+  const timeEl = document.getElementById('main-time');
+  const phaseEl = document.getElementById('phase-display');
+  const roundEl = document.getElementById('round-display');
+  const progressEl = document.getElementById('progress-bar');
+  const elapsedEl = document.getElementById('chip-elapsed');
+  const roundsEl = document.getElementById('chip-rounds');
+  const nextEl = document.getElementById('chip-next');
+
+  elapsedEl.textContent = formatTime(state.elapsed);
+  roundsEl.textContent = state.currentRound;
+
+  // Main time display
+  if (m === 'stopwatch' || m === 'fortime' || m === 'chipper' || m === '21_15_9') {
+    timeEl.textContent = formatTime(state.elapsed);
+  } else if (state.phase === 'idle') {
+    timeEl.textContent = formatTime(state.workTime);
+  } else if (state.phase === 'done') {
+    timeEl.textContent = formatTime(state.elapsed);
+  } else {
+    timeEl.textContent = formatTime(state.phaseTime === Infinity ? state.elapsed : state.phaseTime);
+  }
+
+  // Phase label
+  if (state.phase === 'idle') phaseEl.textContent = 'READY';
+  else if (state.phase === 'done') phaseEl.textContent = 'DONE';
+  else if (state.phase === 'work') phaseEl.textContent = m === 'emom' ? 'GO!' : m === 'death_by' ? `DO ${state.currentRound} REPS` : 'WORK';
+  else if (state.phase === 'rest') phaseEl.textContent = 'REST';
+
+  // Time color warning
+  if (state.phase === 'work' && state.phaseTime !== Infinity) {
+    if (state.phaseTime <= 5) timeEl.className = 'danger';
+    else if (state.phaseTime <= 15) timeEl.className = 'warning';
+    else timeEl.className = '';
+  }
+
+  // Round display
+  if (state.totalRounds > 0) {
+    roundEl.textContent = `ROUND  ${state.currentRound} / ${state.totalRounds}`;
+  } else if (m === 'amrap') {
+    roundEl.textContent = `ROUND  ${state.currentRound}  ← TAP TO LOG`;
+  } else {
+    roundEl.textContent = '';
+  }
+
+  // Ladder reps
+  if (m === 'ladder' && state.ladderReps.length > 0 && state.ladderIdx < state.ladderReps.length) {
+    const reps = state.ladderReps[state.ladderIdx];
+    roundEl.textContent = `REPS: ${reps}  [${state.currentRound}/${state.totalRounds}]`;
+  }
+
+  // Progress bar
+  if (state.totalDuration > 0 && state.phaseTime !== Infinity) {
+    const pct = Math.max(0, Math.min(100, (1 - state.phaseTime / state.totalDuration) * 100));
+    progressEl.style.width = pct + '%';
+  } else if (m === 'stopwatch') {
+    progressEl.style.width = '0%';
+  }
+
+  // Next alert chip
+  if (state.phase === 'work' && state.phaseTime !== Infinity) {
+    if (state.alerts.last10 && !state.alerted.last10 && state.phaseTime > 10) nextEl.textContent = '10s';
+    else if (state.alerts.last30 && !state.alerted.last30 && state.phaseTime > 30) nextEl.textContent = '30s';
+    else nextEl.textContent = '—';
+  } else {
+    nextEl.textContent = '—';
+  }
+}
+
+function updateBtn() {
+  const btn = document.getElementById('btn-start');
+  if (state.running) { btn.textContent = '⏸ PAUSE'; btn.classList.remove('paused'); }
+  else if (state.paused) { btn.textContent = '▶ RESUME'; btn.classList.add('paused'); }
+  else { btn.textContent = '▶ START'; btn.classList.remove('paused'); }
+}
+
+// ── AMRAP round tap ────────────────────────────────────
+document.getElementById('round-display').addEventListener('click', () => {
+  if (state.mode === 'amrap' && state.running) {
+    state.currentRound++;
+    addLog(`+ Round ${state.currentRound - 1} ✓`);
+    beepStart();
+    updateDisplay();
+  }
+});
+
+// ── Log ───────────────────────────────────────────────
+function addLog(msg) {
+  state.log.unshift({ time: new Date().toLocaleTimeString('en', {hour:'2-digit',minute:'2-digit',second:'2-digit'}), msg });
+  const panel = document.getElementById('log-panel');
+  const el = document.createElement('div');
+  el.className = 'log-entry' + (msg.startsWith('⚑') || msg.startsWith('✓') ? ' highlight' : '');
+  el.textContent = msg;
+  panel.insertBefore(el, panel.firstChild);
+  if (panel.children.length > 20) panel.removeChild(panel.lastChild);
+}
+
+// ── Helpers ───────────────────────────────────────────
+function formatTime(s) {
+  if (s === Infinity || s === undefined) return '∞';
+  s = Math.max(0, Math.round(s));
+  const m = Math.floor(s / 60);
+  const sec = s % 60;
+  return `${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+}
+
+// ── Init ──────────────────────────────────────────────
+syncSettings();
+updateDisplay();
+addLog('WOD TIMER READY');
+
+// Prevent sleep on mobile (basic approach)
+let noSleepVideo;
+document.getElementById('btn-start').addEventListener('touchstart', () => {
+  if (!noSleepVideo) {
+    try {
+      const v = document.createElement('video');
+      v.setAttribute('loop', ''); v.setAttribute('playsinline', '');
+      v.setAttribute('muted', ''); v.style.display = 'none';
+      document.body.appendChild(v);
+      v.play().catch(() => {});
+      noSleepVideo = v;
+    } catch(e) {}
+  }
+}, { passive: true });
+</script>
+</body>
+</html>
