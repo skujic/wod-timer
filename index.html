@@ -499,7 +499,8 @@ const state = {
   alerted:{last3:false},
   ladderType:'up', ladderReps:[], ladderIdx:0,
   totalDuration:0, log:[],
-  crowdCheerPlayed: false
+  crowdCheerPlayed: false,
+  coachTriggers: []
 };
 // Audio
 let AudioCtx;
@@ -509,6 +510,7 @@ function beep(freq=880, dur=0.12, type='square', vol=0.3){
     const ctx = getACtx();
     const osc  = ctx.createOscillator();
     const gain = ctx.createGain();
+    // Force mono: merge to single channel then split back to stereo
     const merger  = ctx.createChannelMerger(2);
     const splitter = ctx.createChannelSplitter(1);
     osc.connect(gain);
@@ -524,10 +526,12 @@ function beep(freq=880, dur=0.12, type='square', vol=0.3){
     osc.stop(ctx.currentTime + dur);
   } catch(e){}
 }
+// Punchy countdown tick — two-tone click with a sharp attack
 function beepCountdownTick(pitch=880){
   try{
     const ctx = getACtx();
     const now = ctx.currentTime;
+    // Primary tone
     const osc1 = ctx.createOscillator();
     const g1   = ctx.createGain();
     const merger = ctx.createChannelMerger(2);
@@ -540,6 +544,7 @@ function beepCountdownTick(pitch=880){
     g1.gain.setValueAtTime(0.8, now);
     g1.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
     osc1.start(now); osc1.stop(now + 0.08);
+    // Click layer
     const osc2 = ctx.createOscillator();
     const g2   = ctx.createGain();
     const m2   = ctx.createChannelMerger(2);
@@ -603,11 +608,13 @@ function syncSettings(){
 function adjustTime(type,delta){
   const mId=type==='work'?'work-min':'rest-min', sId=type==='work'?'work-sec':'rest-sec';
   let total=parseInt(document.getElementById(mId).value||0)*60+parseInt(document.getElementById(sId).value||0);
+  // Snap to nearest 10s boundary before adding delta
   if(Math.abs(delta)===10) total=Math.round(total/10)*10;
   total=Math.max(0,total+delta);
   const mins=Math.floor(total/60);
   const secs=total%60;
   document.getElementById(mId).value=mins;
+  // Snap seconds to multiple of 10 (cap at 50 so it wraps cleanly)
   document.getElementById(sId).value=Math.min(50,Math.round(secs/10)*10);
   syncSettings();
 }
@@ -618,6 +625,7 @@ function setPill(el,type,val){
   if(type==='countdown') state.countdownSecs=val;
   else if(type==='ladder') state.ladderType=val;
 }
+// Timer
 function toggleStartPause(){
   if(!state.running&&!state.paused) startTimer();
   else if(state.running) pauseTimer();
@@ -646,10 +654,12 @@ function runCountdown(n,cb){
         cb();
       },650);
     } else {
+      // Re-trigger animation
       numEl.style.animation='none';
-      numEl.offsetHeight;
+      numEl.offsetHeight; // reflow
       numEl.style.animation='popIn 0.35s cubic-bezier(0.175,0.885,0.32,1.275)';
       numEl.textContent=cnt;
+      // Flash red on each tick
       numEl.style.color='#fff';
       ov.classList.add('flash');
       setTimeout(()=>{
@@ -661,25 +671,52 @@ function runCountdown(n,cb){
   },1000);
 }
 function beepCountdownTick(){
+  // Sharp descending click — like a metronome
   beep(880,0.06,'sine',0.5);
   setTimeout(()=>beep(660,0.04,'sine',0.3),60);
 }
 function beepCountdownGo(){
+  // Ascending triple blast for GO
   beep(660,0.12,'square',0.6);
   setTimeout(()=>beep(880,0.12,'square',0.6),130);
   setTimeout(()=>beep(1100,0.25,'square',0.7),260);
+}
+function buildCoachTriggers(duration){
+  // Too short to bother
+  if(duration < 20) return [];
+  // Reserve last 18% for the final push clip — don't schedule short clips there
+  const usable = Math.floor(duration * 0.78);
+  const minGap = 20;
+  const startAt = 10;
+  const slots = usable - startAt;
+  if(slots < minGap) return [];
+  // Fit as many clips as possible, capped at 4
+  const maxCues = Math.min(4, Math.floor(slots / minGap));
+  const cues = [];
+  let attempts = 0;
+  while(cues.length < maxCues && attempts < 200){
+    attempts++;
+    const t = startAt + Math.floor(Math.random() * slots);
+    if(cues.every(c => Math.abs(c - t) >= minGap)){
+      cues.push(t);
+    }
+  }
+  return cues.sort((a,b) => a - b);
 }
 function beginWorkout(){
   state.running=true;state.paused=false;state.elapsed=0;
   state.currentRound=1;state.alerted={last3:false};state.lastRoundPlayed=false;
   state.crowdCheerPlayed=false;
   setupMode();updateBtn();enterFocusMode();
+  // Build random coach cue times now that totalDuration is set
+  state.coachTriggers = (state.totalDuration > 0 && state.totalDuration !== Infinity) ? buildCoachTriggers(state.totalDuration) : [];
   tick(); state.intervalId=setInterval(tick,1000);
 }
 function setupMode(){
   const m=state.mode;
   if(m==='amrap'){state.phase='work';state.phaseTime=state.workTime;state.totalDuration=state.workTime;state.totalRounds=0;}
   else if(m==='fortime'){
+    // If work time is set, use it as a time cap (count down). Otherwise count up infinitely.
     if(state.workTime>0){
       state.phase='work';state.phaseTime=state.workTime;state.totalDuration=state.workTime;state.totalRounds=0;
     } else {
@@ -698,16 +735,38 @@ function buildLadder(){
   else if(state.ladderType==='down') state.ladderReps=Array.from({length:n},(_,i)=>n-i);
   else{state.ladderReps=[...Array.from({length:n},(_,i)=>i+1),...Array.from({length:n-1},(_,i)=>n-1-i)];state.totalRounds=state.ladderReps.length;}
 }
+function buildCoachTriggers(duration){
+  // Skip first 15% and last 15%, spread randomly with min 20% gap between clips
+  if(duration<=0) return [];
+  const start = Math.floor(duration * 0.15);
+  const end   = Math.floor(duration * 0.85);
+  const range = end - start;
+  if(range < 20) return []; // too short to bother
+  // Number of clips: 1 per ~60s of usable range, min 1, max 4
+  const count = Math.min(4, Math.max(1, Math.floor(range / 60)));
+  const minGap = Math.floor(range * 0.20);
+  const triggers = [];
+  let attempts = 0;
+  while(triggers.length < count && attempts < 200){
+    attempts++;
+    const t = start + Math.floor(Math.random() * range);
+    if(triggers.every(existing => Math.abs(existing - t) >= minGap)){
+      triggers.push(t);
+    }
+  }
+  return triggers.sort((a,b) => a - b);
+}
 function tick(){
   if(!state.running)return;
   state.elapsed++;
   if(state.phaseTime!==Infinity)state.phaseTime--;
   checkAlerts();
   if(state.phaseTime<=0){
+    // Stop interval immediately to prevent double-fire
     clearInterval(state.intervalId);
     state.running=false;
     state.phaseTime=0;
-    updateDisplay();
+    updateDisplay(); // show 00:00
     setTimeout(handlePhaseEnd, 300);
     return;
   }
@@ -715,10 +774,12 @@ function tick(){
 }
 function checkAlerts(){
   const t=state.phaseTime;
+  // Play crowd cheer 7 seconds before end (only once per workout phase)
   if(t===7 && !state.crowdCheerPlayed && state.phase==='work'){
     playCrowdCheer();
     state.crowdCheerPlayed = true;
   }
+  // Countdown beep + flash from 5 down to 1, pitch rises each second
   const pitches={5:440, 4:523, 3:622, 2:740, 1:880};
   if(pitches[t]!==undefined){
     beepCountdownTick(pitches[t]);
@@ -792,13 +853,16 @@ function finishWorkout(msg){
   document.getElementById('phase-display').textContent=msg;
   document.getElementById('main-time').className='danger';
   updateBtn();
+  // Play crowd cheer for For Time and Stopwatch completions
   if(state.mode==='fortime' || state.mode==='stopwatch'){
     playCrowdCheer();
   }
+  // Epic finish sound — 4 descending booms
   beep(880,0.2,'square',0.7);
   setTimeout(()=>beep(740,0.2,'square',0.7),200);
   setTimeout(()=>beep(587,0.2,'square',0.7),400);
   setTimeout(()=>beep(440,0.5,'square',0.8),600);
+  // Slide panels back after finish fanfare
   setTimeout(()=>exitFocusMode(), 1500);
 }
 function pauseTimer(){ clearInterval(state.intervalId);state.running=false;state.paused=true;updateBtn(); }
@@ -825,6 +889,7 @@ function updateDisplay(){
   const elapsedEl=document.getElementById('chip-elapsed');
   const roundsEl=document.getElementById('chip-rounds');
   elapsedEl.textContent=formatTime(state.elapsed);
+  // Main time
   if(m==='stopwatch'||m==='fortime'){
     timeEl.textContent=formatTime(state.elapsed);
   }else if(state.phase==='idle'){
@@ -834,17 +899,20 @@ function updateDisplay(){
   }else{
     timeEl.textContent=formatTime(state.phaseTime===Infinity?state.elapsed:state.phaseTime);
   }
+  // Phase label
   if(state.phase==='idle')       phaseEl.textContent='READY';
   else if(state.phase==='done')  phaseEl.textContent='';
   else if(state.phase==='rest')  phaseEl.textContent='REST';
   else if(m==='emom')            phaseEl.textContent='GO!';
   else if(m==='death_by')        phaseEl.textContent=`DO ${state.currentRound} REPS`;
   else                           phaseEl.textContent='WORK';
+  // Color
   if(state.phase==='work'&&state.phaseTime!==Infinity){
     if(state.phaseTime<=5)       timeEl.className='danger';
     else if(state.phaseTime<=15) timeEl.className='warning';
     else                         timeEl.className='';
   }
+  // Round line
   if(m==='ladder'&&state.ladderReps.length>0&&state.ladderIdx<state.ladderReps.length){
     roundEl.textContent=`REPS: ${state.ladderReps[state.ladderIdx]}  [${state.currentRound}/${state.totalRounds}]`;
   }else if(state.totalRounds>0){
@@ -856,16 +924,24 @@ function updateDisplay(){
   }else{
     roundEl.textContent='';
   }
+  // Rounds chip
   roundsEl.textContent=(state.totalRounds>0||m==='amrap')&&state.phase!=='idle' ? state.currentRound : '—';
+  // Progress bar
   if(state.totalDuration>0&&state.phaseTime!==Infinity){
     const pct=Math.max(0,Math.min(100,(1-state.phaseTime/state.totalDuration)*100));
     progressEl.style.width=pct+'%';
-    if(state.running && state.phase==='work' && state.elapsed>0 && state.elapsed%180===0){
+    // Play coach clips at pre-generated random trigger points
+    if(state.running && state.phase==='work' && state.coachTriggers && state.coachTriggers.length > 0 && state.elapsed >= state.coachTriggers[0]){
+      state.coachTriggers.shift();
       playCoach();
     }
-    if(state.running && state.phase==='work' && state.phaseTime===60 && !state.lastRoundPlayed && state.totalDuration>120){
-      playLastRound();
-      state.lastRoundPlayed=true;
+    // Play "final push" clip at ~82% through the workout (workouts longer than 30s)
+    if(state.running && state.phase==='work' && !state.lastRoundPlayed && state.totalDuration>30){
+      const finalPushAt = Math.floor(state.totalDuration * 0.82);
+      if(state.elapsed >= finalPushAt){
+        playLastRound();
+        state.lastRoundPlayed=true;
+      }
     }
   }
 }
@@ -874,6 +950,7 @@ function updateBtn(){
   if(state.running){btn.textContent='⏸ PAUSE';btn.classList.remove('paused');}
   else if(state.paused){btn.textContent='▶ RESUME';btn.classList.add('paused');}
   else{btn.textContent='▶ START';btn.classList.remove('paused');}
+  // Update focus hint
   const hint=document.getElementById('focus-hint');
   if(hint){
     if(state.mode==='fortime' || state.mode==='emom' || state.mode==='tabata' || state.mode==='interval' || state.mode==='ladder' || state.mode==='stopwatch') hint.textContent = state.running ? 'TAP TO PAUSE' : 'TAP TO RESUME';
@@ -900,6 +977,7 @@ const COACH_CLIPS = [
 ];
 const LAST_ROUND_CLIP = COACH_CLIPS[11];
 const MOTIVATIONAL_CLIPS = COACH_CLIPS.slice(0, 11);
+// Preload external audio files
 const AUDIO_CACHE = new Map();
 function getAudio(src){
   let audio = AUDIO_CACHE.get(src);
@@ -910,10 +988,12 @@ function getAudio(src){
   }
   return audio.cloneNode();
 }
+// Shuffled queue so clips never repeat until all played
 let coachQueue = [];
 function getNextClip() {
   if(coachQueue.length===0) {
     coachQueue = [...MOTIVATIONAL_CLIPS];
+    // Fisher-Yates shuffle
     for(let i=coachQueue.length-1;i>0;i--){
       const j=Math.floor(Math.random()*(i+1));
       [coachQueue[i],coachQueue[j]]=[coachQueue[j],coachQueue[i]];
@@ -937,11 +1017,13 @@ function exitFocusMode(){  document.getElementById('app').classList.remove('focu
 document.getElementById('main-panel').addEventListener('click',(e)=>{
   const inFocus = document.getElementById('app').classList.contains('focus');
   if(e.target.closest('.ctrl-btn')) return;
+  // FOR TIME + EMOM + TABATA: tap to pause, tap again to resume — never exit focus
   if((state.mode==='fortime' || state.mode==='emom' || state.mode==='tabata' || state.mode==='interval' || state.mode==='ladder' || state.mode==='stopwatch') && inFocus){
     if(state.running) pauseTimer();
     else if(state.paused) resumeTimer();
     return;
   }
+  // AMRAP: tap to count a round
   if(state.mode==='amrap' && state.running && inFocus){
     state.currentRound++;
     beepStart();
@@ -951,6 +1033,7 @@ document.getElementById('main-panel').addEventListener('click',(e)=>{
     setTimeout(()=>t.style.opacity='1', 120);
     return;
   }
+  // All other modes: tap exits focus mode to show panels
   if(inFocus) exitFocusMode();
 });
 function formatTime(s){
@@ -960,6 +1043,7 @@ function formatTime(s){
 }
 syncSettings();
 updateDisplay();
+// Apply correct panel visibility for default mode on load
 document.getElementById('sg-rounds').style.display = MODE_INFO[state.mode].hasRounds ? 'block' : 'none';
 document.getElementById('sg-resttime').classList.toggle('visible', MODE_INFO[state.mode].hasRest);
 document.getElementById('sg-ladder').style.display = state.mode === 'ladder' ? 'block' : 'none';
@@ -968,6 +1052,7 @@ let _audioUnlocked = false;
 function _unlockAudio(){
   if(_audioUnlocked) return;
   _audioUnlocked = true;
+  // Briefly play+pause all clips at zero volume to satisfy autoplay policy
   const allSrcs = [...COACH_CLIPS, CROWD_SRC];
   allSrcs.forEach(src => {
     const a = new Audio(src);
