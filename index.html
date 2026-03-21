@@ -745,6 +745,12 @@
 </style>
 </head>
 <body>
+<!-- Silent looping audio establishes iOS AVAudioSession in ambient (mixable) mode.
+     muted + playsinline allows autoplay on iOS without user gesture.
+     JS unmutes it on first touch to keep Spotify playing in background. -->
+<audio id="silentAudio" loop playsinline muted
+  src="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA="
+  style="display:none"></audio>
 <div id="rotate-msg">
   <div id="rotate-icon">↺</div>
   <div id="rotate-text">ROTATE TO CRUSH IT</div>
@@ -903,14 +909,21 @@ const state = {
 const _SIL_SRC = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=";
 let _silEl = null;
 function _ensureSilentKeepAlive(){
-  if(_silEl) return;
-  const s = new Audio(_SIL_SRC);
-  s.setAttribute('loop','');
-  s.setAttribute('playsinline','');
-  s.volume = 0.001; // near-zero but not exactly 0 — iOS ignores volume=0 elements for session routing
-  _silEl = s;
-  s.play().catch(()=>{});
+  if(!_silEl) {
+    // Reuse the HTML element started muted at page load
+    _silEl = document.getElementById('silentAudio') || new Audio(_SIL_SRC);
+    _silEl.setAttribute('loop','');
+    _silEl.setAttribute('playsinline','');
+  }
+  // Unmute and ensure playing — this keeps AVAudioSession in ambient mode
+  _silEl.muted = false;
+  _silEl.volume = 0.001;
+  if(_silEl.paused) _silEl.play().catch(()=>{});
 }
+
+// Pre-establish audio session on first user interaction
+document.addEventListener('touchstart', _ensureSilentKeepAlive, { once: true, passive: true });
+document.addEventListener('click', _ensureSilentKeepAlive, { once: true, passive: true });
 
 // Audio
 let AudioCtx;
